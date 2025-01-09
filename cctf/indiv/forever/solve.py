@@ -2,18 +2,23 @@ from pwn import *
 
 elf = ELF("./forever_linux")
 
+context.log_level = 'debug'
+
 p = process("./forever_linux")
 p.recvuntil(b">> ")
 p.sendline(b"nikola")
 
-for i in range(867502):
-    print(i)
-    print(p.recvuntil(b":"))
-    p.readline()
-    sum = eval(p.readline().decode('UTF-8'))
-    print(sum)
-    print(p.recvuntil(b">> "))
-    p.sendline(str(sum))
-    print(p.readline())
+p.recvlines(5)
+calculation = p.recvline().decode()
+print(calculation)
+answer = eval(calculation)
+p.sendlineafter('>>', str(answer))
 
-p.readline()
+for i in range(2, 867503):
+	p.recvuntil(':\n')
+	calculation = p.recvline().decode()
+	print(calculation)
+	answer = str(int(eval(calculation)))
+	p.sendlineafter('>>', answer)
+
+print(p.recvall())

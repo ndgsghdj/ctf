@@ -1,0 +1,25 @@
+Hello. Thanks for trying this challenge. 
+This malware is custom made by the creator of this challenge.
+
+!DISCLAIMER!
+
+By proceeding with this CTF challenge, you agree to the following: 
+
+The sample provided is for analysis purposes only. Do not reconstruct, recompile, or execute any part 
+of the sample. You must not use the provided sample for malicious activities, unauthorised access, or 
+any actions that could cause harm. Do not distribute or modify the binary in any harmful manner.
+
+The creator of this challenge shall not be held responsible for any consequences arising from misuse of the 
+sample. You are solely responsible for your actions and any resulting damage or harm. Ensure your 
+actions comply with all applicable laws.
+
+If you had accidentlly executed the sample, simply use taskmanager to terminate the process of the same name. 
+Ensure to follow safe practices when analysing the malware. Have fun!
+
+!BACKGROUND!
+This malware runs in a Windows environment. This sample was found in a Windows 11 computer.
+You are to analyse the code and packets to find out whats going on.
+A PCAP file with some network activity has been included.
+
+Thank You, 
+Have Fun :)!
